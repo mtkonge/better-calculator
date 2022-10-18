@@ -18,15 +18,17 @@ class Token:
     
     def __str__(self) -> str:
         return f"({self.tt}, \"{self.value}\""
-
+    
 DIGITS = "0123456789"
 
 def tokenize(text: str) -> List[Token]:
-    tokens: list[object] = []
+    tokens: List[Token] = []
     i = 0
     isNumber = False
     while i < len(text):
-        if text[i] == "+":
+        if text[i] in " \n\t\r":
+            i += 1
+        elif text[i] == "+":
             tokens.append(Token(TokenType.PLUS, text[i]))
             i += 1
         elif text[i] == "-":
@@ -51,7 +53,48 @@ def tokenize(text: str) -> List[Token]:
                 value += text[i]
                 i += 1
             tokens.append(Token(TokenType.NUMBER, value))
+        else:
+            raise Exception(f"bruh you fucked up, computer no like '{text[i]}'")
     return tokens
+
+class Expr():
+    def __init__(self):
+        pass
+
+class Int(Expr):
+    def __init__(self, value: int):
+        super().__init__()
+        self.value = value
+    
+    def __str__(self) -> str:
+        return f"Int {{ value: {self.value} }}"
+
+
+class Parser:
+    def __init__(self, tokens: List[Token]):
+        self.tokens = tokens
+        self.i = 0
+
+    def parseExpr(self) ->  Expr:
+        return self.parseVal()
+    
+    def parseAddOrSub(self) -> Expr:
+        pass
+
+    def parseVal(self) -> Expr:
+        if self.tokens[self.i].tt == TokenType.NUMBER:
+            value = int(self.tokens[self.i].value)
+            expr = Int(value)
+            self.i += 1
+            return expr
+        else:
+            raise Exception(f"Expected value, got {self.tokens[self.i]}")
+        
+
+    
+    
+
+
 
 def main():
     with open("test.txt") as f:
@@ -59,6 +102,9 @@ def main():
         tokens = tokenize(text)
         for token in tokens:
             print(token)
+        ast = Parser(tokens).parseExpr()
+        
+        print(str(ast))
 
 if __name__ == "__main__":
     main()
