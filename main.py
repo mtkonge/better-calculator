@@ -25,43 +25,31 @@ DIGITS = "0123456789"
 def tokenize(text: str) -> List[Token]:
     tokens: List[Token] = []
     i = 0
-    willBeNegative = True
     while i < len(text):
         if text[i] in " \n\t\r":
             i += 1
         elif text[i] == "+":
             tokens.append(Token(TokenType.PLUS, text[i]))
             i += 1
-            willBeNegative = True
         elif text[i] == "-":
-            if willBeNegative:
-                tokens.append(Token(TokenType.NEGATIVE, text[i]))
-            else:
-                tokens.append(Token(TokenType.MINUS, text[i]))
+            tokens.append(Token(TokenType.MINUS, text[i]))
             i += 1
-            willBeNegative = True
-        
         elif text[i] == "*":
             tokens.append(Token(TokenType.MULTIPLY, text[i]))
             i += 1
-            willBeNegative = True
         elif text[i] == "/":
             tokens.append(Token(TokenType.DIVIDE, text[i]))
             i += 1
-            willBeNegative = True
         elif text[i] == "(":
             tokens.append(Token(TokenType.LPAREN, text[i]))
             i += 1
-            willBeNegative = False
 
         elif text[i] == ")":
             tokens.append(Token(TokenType.RPAREN, text[i]))
             i += 1
-            willBeNegative = True
         elif text[i] in DIGITS:
             value = text[i]
             i += 1
-            willBeNegative = False
             while i < len(text) and text[i] in DIGITS:
                 value += text[i]
                 i += 1
@@ -82,41 +70,98 @@ class Int(Expr):
     def __str__(self) -> str:
         return f"Int {{ value: {self.value} }}"
 
+class Negate(Expr):
+    def __init__(self, value: Int):
+        super().__init__()
+        self.value = value
+    def __str__(self) -> str:
+        return f"Negate {{ {self.value} }}"
+
+class Sub(Expr):
+    def __init__(self, left: Int | Negate, right: Int | Negate):
+        super().__init__()
+        self.left = left
+        self.right = right
+    def __str__(self) -> str:
+        return f"Sub {{ Left: {self.left} Right: {self.right} }}"
+
+class Add(Expr):
+    def __init__(self, left: Int | Negate, right: Int | Negate):
+        super().__init__()
+        self.left = left
+        self.right = right
+
+    def __str__(self) -> str:
+        return f"Add {{ Left: {self.left} Right: {self.right} }}"
+
+class Mul(Expr):
+    def __init__(self, left: Int | Negate, right: Int | Negate):
+        super().__init__()
+        self.left = left
+        self.right = right
+    def __str__(self) -> str:
+        return f"Mul {{ Left: {self.left} Right: {self.right} }}"
+
+class Div(Expr):
+    def __init__(self, left: Int | Negate, right: Int | Negate):
+        super().__init__()
+        self.left = left
+        self.right = right
+    def __str__(self) -> str:
+        return f"Div {{ Left: {self.left} Right: {self.right}}}"        
+
+
 class Parser:
     def __init__(self, tokens: List[Token]):
         self.tokens = tokens
         self.i = 0
 
     def parseExpr(self) ->  Expr:
-        return self.parseVal()
+        return self.parseAddOrSub()
     
     def parseAddOrSub(self) -> Expr:
-        pass    
+        left = self.parseMulOrDiv()
+        if self.tokens[self.i].tt == TokenType.PLUS:
+            self.i += 1
+            right = self.parseAddOrSub()
+            return Add(left, right)
+        elif self.tokens[self.i].tt == TokenType.MINUS:
+            self.i += 1
+            right = self.parseAddOrSub()
+            return Sub(left, right)
+        else:
+            return left
 
-    def mulOrDiv(self) -> Expr:
-        pass
+    def parseMulOrDiv(self) -> Expr:
+        left = self.parseNeg()
+        if self.tokens[self.i].tt == TokenType.MULTIPLY:
+            self.i += 1
+            right = self.parseMulOrDiv()
+            return Mul(left, right)
+        if self.tokens[self.i].tt == TokenType.DIVIDE:
+            self.i += 1
+            right = self.parseMulOrDiv()
+            return Div(left, right)
+        else:
+            return left
 
     def parseNeg(self) -> Expr:
-        if self.tokens[self.i].tt == TokenType:
-            pass
-
-    #fn parse_negation() -> Expr {
-    #if let current_token() = TokenType::Minus {
-    #    let value = parse_negation();
-    #    return Expr::Negate(value);
-    #} else {
-    #    return parse_grouping();
-    #}
-#}
+        if self.tokens[self.i].tt == TokenType.MINUS:
+            self.i += 1
+            value = self.parseNeg()
+            return Negate(value)
+        else:
+            return self.parseGrp()
 
 
     def parseGrp(self) -> Expr:
         if self.tokens[self.i].tt == TokenType.LPAREN:
-            value = parseNeg()
+            self.i += 1
+            value = self.parseGrp()
             self.skip(TokenType.RPAREN)
-            return self.parseNeg()
+            return value
         else:
-            return parseVal();
+            return self.parseVal();
 
     def parseVal(self) -> Expr:
         if self.tokens[self.i].tt == TokenType.NUMBER:
@@ -129,7 +174,7 @@ class Parser:
 
     def skip(self, tokenType: TokenType):
         if self.tokens[self.i].tt == tokenType:
-            i += 1
+            self.i += 1
         
 def main():
     with open("test.txt") as f:
@@ -139,7 +184,7 @@ def main():
             print(token)
         ast = Parser(tokens).parseExpr()
         
-        print(str(ast))
+        print(ast)
 
 if __name__ == "__main__":
     main()
