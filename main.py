@@ -10,7 +10,8 @@ class TokenType(Enum):
     DIVIDE = 4
     LPAREN = 5
     RPAREN = 6
-    NEGATIVE = 7
+    EOF = 7
+    
 
 class Token:
     def __init__(self, tt: TokenType, value: str):
@@ -56,11 +57,16 @@ def tokenize(text: str) -> List[Token]:
             tokens.append(Token(TokenType.NUMBER, value))
         else:
             raise Exception(f"bruh you fucked up, computer no like '{text[i]}'")
+            
+    tokens.append(Token(TokenType.EOF, ""))
     return tokens
 
 class Expr():
     def __init__(self):
         pass
+
+    def toEquation():
+        raise Exception("not implemented") 
 
 class Int(Expr):
     def __init__(self, value: int):
@@ -70,12 +76,19 @@ class Int(Expr):
     def __str__(self) -> str:
         return f"Int {{ value: {self.value} }}"
 
+    def toEquation(self) -> str:
+        return f"{self.value}"
+
 class Negate(Expr):
     def __init__(self, value: Int):
         super().__init__()
         self.value = value
     def __str__(self) -> str:
         return f"Negate {{ {self.value} }}"
+
+    def toEquation(self) -> str:
+
+        return f"-{self.value.toEquation()}"
 
 class Sub(Expr):
     def __init__(self, left: Int | Negate, right: Int | Negate):
@@ -84,6 +97,9 @@ class Sub(Expr):
         self.right = right
     def __str__(self) -> str:
         return f"Sub {{ Left: {self.left} Right: {self.right} }}"
+    
+    def toEquation(self) -> str:
+        return f"({self.left.toEquation()} - {self.right.toEquation()})"
 
 class Add(Expr):
     def __init__(self, left: Int | Negate, right: Int | Negate):
@@ -94,6 +110,9 @@ class Add(Expr):
     def __str__(self) -> str:
         return f"Add {{ Left: {self.left} Right: {self.right} }}"
 
+    def toEquation(self) -> str:
+        return f"({self.left.toEquation()} + {self.right.toEquation()})"
+
 class Mul(Expr):
     def __init__(self, left: Int | Negate, right: Int | Negate):
         super().__init__()
@@ -102,19 +121,26 @@ class Mul(Expr):
     def __str__(self) -> str:
         return f"Mul {{ Left: {self.left} Right: {self.right} }}"
 
+    def toEquation(self) -> str:
+        return f"({self.left.toEquation()} * {self.right.toEquation()})"
+
 class Div(Expr):
     def __init__(self, left: Int | Negate, right: Int | Negate):
         super().__init__()
         self.left = left
         self.right = right
     def __str__(self) -> str:
-        return f"Div {{ Left: {self.left} Right: {self.right}}}"        
+        return f"Div {{ Left: {self.left} Right: {self.right}}}" 
+
+    def toEquation(self) -> str:
+        return f"({self.left.toEquation()} / {self.right.toEquation()})"      
 
 
 class Parser:
     def __init__(self, tokens: List[Token]):
         self.tokens = tokens
         self.i = 0
+        
 
     def parseExpr(self) ->  Expr:
         return self.parseAddOrSub()
@@ -157,8 +183,9 @@ class Parser:
     def parseGrp(self) -> Expr:
         if self.tokens[self.i].tt == TokenType.LPAREN:
             self.i += 1
-            value = self.parseGrp()
-            self.skip(TokenType.RPAREN)
+            value = self.parseExpr()
+            self.expect(TokenType.RPAREN)
+            self.i += 1
             return value
         else:
             return self.parseVal();
@@ -172,9 +199,9 @@ class Parser:
         else:
             raise Exception(f"Expected value, got {self.tokens[self.i]}")
 
-    def skip(self, tokenType: TokenType):
-        if self.tokens[self.i].tt == tokenType:
-            self.i += 1
+    def expect(self, tokenType: TokenType):
+        if self.tokens[self.i].tt != tokenType:
+            raise Exception(f"{{expected {self.tokens[self.i].tt}}} ")
         
 def main():
     with open("test.txt") as f:
@@ -184,7 +211,7 @@ def main():
             print(token)
         ast = Parser(tokens).parseExpr()
         
-        print(ast)
+        print(ast.toEquation())
 
 if __name__ == "__main__":
     main()
