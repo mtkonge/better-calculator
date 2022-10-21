@@ -1,6 +1,35 @@
-
 from enum import Enum
 from typing import List
+
+
+class Stack:
+    def __init__(self) -> None:
+        self.values = []
+    
+    def push(self, value):
+        self.values.append(value)
+
+    def pop(self):
+        return self.values.pop()
+
+    def add(self):
+        self.values[0] += self.values[1]
+        del self.values[1]
+
+    def multiply(self):
+        self.values[0] *= self.values[1]
+        del self.values[1]
+        
+    def divide(self):
+        self.values[0] /= self.values[1]
+        del self.values[1]
+
+    def subtract(self):
+        self.values[0] -= self.values[1]
+        del self.values[1]
+
+    def negate(self):
+        self.values[0] = -self.values[0]
 
 class TokenType(Enum):
     NUMBER = 0
@@ -11,7 +40,6 @@ class TokenType(Enum):
     LPAREN = 5
     RPAREN = 6
     EOF = 7
-    
 
 class Token:
     def __init__(self, tt: TokenType, value: str):
@@ -44,7 +72,6 @@ def tokenize(text: str) -> List[Token]:
         elif text[i] == "(":
             tokens.append(Token(TokenType.LPAREN, text[i]))
             i += 1
-
         elif text[i] == ")":
             tokens.append(Token(TokenType.RPAREN, text[i]))
             i += 1
@@ -93,8 +120,6 @@ class Negate(Expr):
     def calculate(self) -> int:
         return -self.value.calculate()
         
-
-
 class Sub(Expr):
     def __init__(self, left: Int | Negate, right: Int | Negate):
         super().__init__()
@@ -226,6 +251,7 @@ class Parser:
             raise Exception(f"{{expected {self.tokens[self.i].tt}}} ")
         
 def main():
+    stack = Stack()
     while True:
         text = input("> ")
         tokens = tokenize(text)
